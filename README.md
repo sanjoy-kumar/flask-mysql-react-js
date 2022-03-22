@@ -1,5 +1,3 @@
-# flask-mysql-react-js
-
 ## Creating a Starter React Project
 
 $ npx create-react-app react-flask-app
@@ -15,4 +13,13 @@ $ cd api
 
 $ python -m venv venv
 $ venv/Scripts/activate
+
+## Add custom commands inside scripts of package.json file
+
+"start-api": "cd api && flask run --no-debugger"
+
+$ npm run start-api
+
+## 
+
 
