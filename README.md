@@ -23,6 +23,9 @@
 ## Front End Design
 ![Front End](./react-flask-app/src/images/11.jpg)
 
-## After insert contact info the Front End Design
+## After insert contact info into the Front End Design
 ![After insert contact info](./react-flask-app/src/images/22.jpg)
+
+## After insert contact info into the MySQL Database
+![After insert contact info](./react-flask-app/src/images/33.jpg)
 
