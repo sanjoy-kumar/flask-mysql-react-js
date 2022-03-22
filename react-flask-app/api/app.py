@@ -1,48 +1,115 @@
-from flask import Flask, render_template, request
-from flask_mysqldb import MySQL
+from flask import Flask, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
 from flask_cors import CORS
 
-
-# Connecting Flask Application with MySQL
+# Connecting Flask Application with MySQL Database
 app = Flask(__name__)
 CORS(app)
 
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'developer'
-app.config['MYSQL_PASSWORD'] = 'developer'
-app.config['MYSQL_DB'] = 'mydb'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://developer:developer@localhost/mydb'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-mysql = MySQL(app)
+db = SQLAlchemy(app)
+ma = Marshmallow(app)
 
-# Insert Contact Info into MySQL Database
-@app.route('/contactinfo', methods=['GET', 'POST'])
-def contactinfo():
-    if request.method == 'POST':
-        try:
-            # Reading the posted values from the UI
-            content = request.get_json()
-            _firstname = content['first_name']
-            _lastname = content['last_name']
-            _phonenumber = content['phone_number']
-            _jobtitle = content['job_title']
-            _country = content['country']
-            # Creating a connection cursor
-            cursor = mysql.connection.cursor()
-            # Executing SQL Statements
-            cursor.execute(''' INSERT INTO contactinfo(first_name,last_name,phone_number,job_title,country) VALUES(%s,%s,%s,%s,%s)''',
-                           (_firstname, _lastname, _phonenumber, _jobtitle, _country))
-            # Saving the Actions performed on the DB
-            mysql.connection.commit()
-            id = cursor.lastrowid
-            # Closing the cursor
-            cursor.close()
-            return {"id": id, "first_name": _firstname, "last_name": _lastname, "phone_number": _phonenumber, "job_title": _jobtitle, "country": _country}
-        except Exception as e:
-            error = _firstname + ' is a duplicate name.'
-            return {"error": error}
+
+# Create Table Contactinfo
+
+class Contactinfo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(80))
+    last_name = db.Column(db.String(80))
+    phone_number = db.Column(db.String(80))
+    job_title = db.Column(db.String(80))
+    country = db.Column(db.String(80), default='Canada')
+
+    def __init__(self, first_name, last_name, phone_number, job_title):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.phone_number = phone_number
+        self.job_title = job_title
+
+# Define Schema
+
+class ContactInfoSchema(ma.Schema):
+    class Meta:
+        fields = ('id', 'first_name', 'last_name', 'phone_number', 'job_title', 'country')
+
+
+
+contact_info_schema = ContactInfoSchema()
+contacts_info_schema = ContactInfoSchema(many=True)
+
+
+# All contacts info from database
+
+@app.route('/get', methods=['GET'])
+def get_contacts_info():
+    all_contacts = Contactinfo.query.all()
+    results = contacts_info_schema.dump(all_contacts)
+    return jsonify(results)
+
+# Single contact info from database
+
+@app.route('/get/<id>', methods=['GET'])
+def get_contact_details(id):
+    contact = Contactinfo.query.get(id)    
+    return contact_info_schema.jsonify(contact)
+
+
+# Add contact info into the database
+
+@app.route('/add', methods=['POST'])
+def add_contactinfo():
+    first_name = request.json['first_name']
+    last_name = request.json['last_name']
+    phone_number = request.json['phone_number']
+    job_title = request.json['job_title']
+
+
+    contacts = Contactinfo(first_name, last_name, phone_number, job_title)
+    db.session.add(contacts)
+    db.session.commit()
+    return contact_info_schema.jsonify(contacts)
+
+
+# Update contact info into the database
+
+@app.route('/update/<id>', methods=['PUT'])
+def update_contact_info(id):
+    contact = Contactinfo.query.get(id)
+
+    first_name = request.json['first_name']
+    last_name = request.json['last_name']
+    phone_number = request.json['phone_number']
+    job_title = request.json['job_title']
+    
+
+    contact.first_name = first_name
+    contact.last_name = last_name
+    contact.phone_number = phone_number
+    contact.job_title = job_title
+
+
+    db.session.commit()
+
+    return contact_info_schema.jsonify(contact)
+
+
+# Delete contact info from the database
+
+@app.route('/delete/<id>', methods=['DELETE'])
+def delete_contact_info(id):
+    contact = Contactinfo.query.get(id)
+    
+    db.session.delete(contact)
+    db.session.commit()
+
+    return contact_info_schema.jsonify(contact)
 
 
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Grid, TextField, Button, Card, CardContent, Typography, Avatar } from '@material-ui/core';
 import IconButton from '@material-ui/core/IconButton';
 import { ImageList, ImageListItem, ImageListItemBar, CardActionArea } from '@mui/material';
@@ -7,6 +7,7 @@ import '../ContactForm.css';
 import EditIcon from '@mui/icons-material/Edit';
 import Fab from '@mui/material/Fab';
 import { makeStyles } from "@material-ui/core/styles";
+
 
 const useStyles = makeStyles({
   root: {
@@ -26,6 +27,8 @@ const useStyles = makeStyles({
 
 const ContactForm = () => {
   const classes = useStyles();
+
+
 
   const countries = [
     {
@@ -71,13 +74,13 @@ const ContactForm = () => {
     }
   };
 
- 
+
   const handleSubmit = (e) => {
     e.preventDefault()
     //console.log(formData);
     if (formData.first_name && formData.last_name && formData.phone_number && formData.job_title) {
       axios
-        .post('http://127.0.0.1:5000/contactinfo', formData)
+        .post('http://127.0.0.1:5000/add', formData)
         .then((res) => {
           //console.log(res["data"]);
           const {
@@ -119,89 +122,220 @@ const ContactForm = () => {
   };
 
 
+  // Receiving Contact Info from MySQL Database
+
+  const [contact, setContact] = useState([]);
+  const [clicked, setClicked] = useState(true);
+
+  const handleGetContactInfo = (e) => {
+    e.preventDefault()
+    const contactId = localStorage.getItem("id");
+    axios
+      .get(`http://127.0.0.1:5000/get/${contactId}`)
+      .then(resp => setContact(resp.data))
+      .then(setClicked(false))
+      .catch(err => {
+        console.error(err);
+      });
+
+  };
+
+  // -------------------- Update --------------
+
+  const handleUpdateSubmit = (e) => {
+    e.preventDefault()
+
+    const contactId = localStorage.getItem("id");
+    if (formData.first_name && formData.last_name && formData.phone_number && formData.job_title) {
+      axios
+        .put(`http://127.0.0.1:5000/update/${contactId}`, formData)
+        .then(resp => setContact(resp.data))
+        .catch(err => {
+          console.error(err);
+        });
+    }
+  };
+
+
+  const handleHomePage = (e) => {
+    setClicked(true);
+    window.location = '/';
+  }
 
 
   return (
+
     <div className="ContactForm">
-      <Grid>
-        <Card style={{ maxWidth: 600, backgroundColor: "#FAF9FF", padding: "20px 5px", margin: "0 auto" }}>
-          <CardContent>
-            <form autoComplete="off" onSubmit={handleSubmit}>
+      {clicked ? (
+        <Grid>
+          <Card style={{ maxWidth: 600, backgroundColor: "#FAF9FF", padding: "20px 5px", margin: "0 auto" }}>
+            <CardContent>
+              <form autoComplete="off" onSubmit={handleSubmit}>
 
-              <Grid xs={12}>
-                <Typography gutterBottom variant="h5">
-                  Edit your Contact Information
-                  &nbsp; &nbsp; &nbsp;
-                  <Button type="submit" style={{ color: 'white', backgroundColor: '#EE7600', width: '160px' }} variant="contained" >Save</Button>
-                </Typography>
-              </Grid>
-
-              <IconButton>
-                <Avatar
-                  src={imgData}
-                  style={{
-                    width: "150px",
-                    height: "150px",
-                  }}
-                />
-                <Fab size="small" sx={{ backgroundColor: '#EE7600', color: 'white' }} aria-label="edit">
-                  <label>
-                    <EditIcon />
-                    <input id="getFile" style={{ display: 'none' }} type="file" onChange={handleImageChange} />
-                  </label>
-                </Fab>
-              </IconButton>
-
-              <Grid container spacing={1}>
-                <Grid xs={12} sm={6} item>
-                  <label>First Name</label>
-                  <TextField className={classes.root} placeholder="First name" variant="outlined" fullWidth name="first_name" value={formData.first_name} onChange={handleChange} required />
+                <Grid xs={12}>
+                  <Typography gutterBottom variant="h5">
+                    Edit your Contact Information
+                    &nbsp; &nbsp; &nbsp;
+                    <Button type="submit" style={{ color: 'white', backgroundColor: '#EE7600', width: '160px' }} variant="contained" >Save</Button>
+                  </Typography>
                 </Grid>
 
-                <Grid xs={12} sm={6} item>
-                  <label>Last Name</label>
-                  <TextField className={classes.root} placeholder="Last name" variant="outlined" fullWidth name="last_name" value={formData.last_name} onChange={handleChange} required />
+                <IconButton>
+                  <Avatar
+                    src={imgData}
+                    style={{
+                      width: "150px",
+                      height: "150px",
+                    }}
+                  />
+                  <Fab size="small" sx={{ backgroundColor: '#EE7600', color: 'white' }} aria-label="edit">
+                    <label>
+                      <EditIcon />
+                      <input id="getFile" style={{ display: 'none' }} type="file" onChange={handleImageChange} />
+                    </label>
+                  </Fab>
+                </IconButton>
+
+                <Grid container spacing={1}>
+                  <Grid xs={12} sm={6} item>
+                    <label>First Name</label>
+                    <TextField className={classes.root} placeholder="First name" variant="outlined" fullWidth name="first_name" value={formData.first_name} onChange={handleChange} required />
+                  </Grid>
+
+                  <Grid xs={12} sm={6} item>
+                    <label>Last Name</label>
+                    <TextField className={classes.root} placeholder="Last name" variant="outlined" fullWidth name="last_name" value={formData.last_name} onChange={handleChange} required />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <label>Phone Number</label>
+                    <TextField className={classes.root} type="tel" placeholder="(123) 456-7891" variant="outlined" fullWidth name="phone_number" value={formData.phone_number} onChange={handleChange} required />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <label>Job Title</label>
+                    <TextField className={classes.root} placeholder="Chief Financial Officer" variant="outlined" fullWidth name="job_title" value={formData.job_title} onChange={handleChange} required />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <label>Country</label>
+                    <ImageList sx={{ width: 600, height: 140 }} cols={4} gap={8}>
+                      {countries.map((item) => (
+                        <CardActionArea name="country" value={formData.country} onChange={handleChange}>
+                          <ImageListItem key={item.img} variant="outlined" >
+
+                            <img
+                              src={`${item.img}?w=80&fit=crop&auto=format`}
+                              srcSet={`${item.img}?w=80&fit=crop&auto=format&dpr=2 2x`}
+                              alt={item.title}
+                              loading="lazy"
+                            />
+                            <ImageListItemBar
+                              title={item.title}
+                              position="below"
+                            />
+
+                          </ImageListItem>
+                        </CardActionArea>
+                      ))}
+                    </ImageList>
+                  </Grid>
+
                 </Grid>
+              </form>
+            </CardContent>
+          </Card>
+          <div>
+            <Button type="submit" style={{ color: 'white', backgroundColor: '#EE7600', width: '160px' }} variant="contained" onClick={handleGetContactInfo}>Load</Button>
+          </div>
+          <br />
+        </Grid>
+      ) :
+        (
+          <Grid>
+            <Card style={{ maxWidth: 600, backgroundColor: "#FAF9FF", padding: "20px 5px", margin: "0 auto" }}>
+              <CardContent>
+                <form autoComplete="off" onSubmit={handleUpdateSubmit}>
 
-                <Grid item xs={12}>
-                  <label>Phone Number</label>
-                  <TextField className={classes.root} type="tel" placeholder="(123) 456-7891" variant="outlined" fullWidth name="phone_number" value={formData.phone_number} onChange={handleChange} required />
-                </Grid>
+                  <Grid xs={12}>
+                    <Typography gutterBottom variant="h5">
+                      Edit your Contact Information
+                      &nbsp; &nbsp; &nbsp;
+                      <Button type="submit" style={{ color: 'white', backgroundColor: '#EE7600', width: '160px' }} variant="contained" >Save</Button>
+                    </Typography>
+                  </Grid>
 
-                <Grid item xs={12}>
-                  <label>Job Title</label>
-                  <TextField className={classes.root} placeholder="Chief Financial Officer" variant="outlined" fullWidth name="job_title" value={formData.job_title} onChange={handleChange} required />
-                </Grid>
+                  <IconButton>
+                    <Avatar
+                      src={imgData}
+                      style={{
+                        width: "150px",
+                        height: "150px",
+                      }}
+                    />
+                    <Fab size="small" sx={{ backgroundColor: '#EE7600', color: 'white' }} aria-label="edit">
+                      <label>
+                        <EditIcon />
+                        <input id="getFile" style={{ display: 'none' }} type="file" onChange={handleImageChange} />
+                      </label>
+                    </Fab>
+                  </IconButton>
 
-                <Grid item xs={12}>
-                  <label>Country</label>
-                  <ImageList sx={{ width: 600, height: 140 }} cols={4} gap={8}>
-                    {countries.map((item) => (
-                      <CardActionArea name="country" value={formData.country} onChange={handleChange}>
-                        <ImageListItem key={item.img} variant="outlined" >
+                  <Grid container spacing={1}>
+                    <Grid xs={12} sm={6} item>
+                      <label>First Name</label>
+                      <TextField className={classes.root} placeholder="First name" variant="outlined" fullWidth name="first_name" value={formData.first_name} onChange={handleChange} required />
+                    </Grid>
 
-                          <img
-                            src={`${item.img}?w=80&fit=crop&auto=format`}
-                            srcSet={`${item.img}?w=80&fit=crop&auto=format&dpr=2 2x`}
-                            alt={item.title}
-                            loading="lazy"
-                          />
-                          <ImageListItemBar
-                            title={item.title}
-                            position="below"
-                          />
+                    <Grid xs={12} sm={6} item>
+                      <label>Last Name</label>
+                      <TextField className={classes.root} placeholder="Last name" variant="outlined" fullWidth name="last_name" value={formData.last_name} onChange={handleChange} required />
+                    </Grid>
 
-                        </ImageListItem>
-                      </CardActionArea>
-                    ))}
-                  </ImageList>
-                </Grid>
+                    <Grid item xs={12}>
+                      <label>Phone Number</label>
+                      <TextField className={classes.root} type="tel" placeholder="(123) 456-7891" variant="outlined" fullWidth name="phone_number" value={formData.phone_number} onChange={handleChange} required />
+                    </Grid>
 
-              </Grid>
-            </form>
-          </CardContent>
-        </Card>
-      </Grid>
+                    <Grid item xs={12}>
+                      <label>Job Title</label>
+                      <TextField className={classes.root} placeholder="Chief Financial Officer" variant="outlined" fullWidth name="job_title" value={formData.job_title} onChange={handleChange} required />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <label>Country</label>
+                      <ImageList sx={{ width: 600, height: 140 }} cols={4} gap={8}>
+                        {countries.map((item) => (
+                          <CardActionArea name="country" value={formData.country} onChange={handleChange}>
+                            <ImageListItem key={item.img} variant="outlined" >
+
+                              <img
+                                src={`${item.img}?w=80&fit=crop&auto=format`}
+                                srcSet={`${item.img}?w=80&fit=crop&auto=format&dpr=2 2x`}
+                                alt={item.title}
+                                loading="lazy"
+                              />
+                              <ImageListItemBar
+                                title={item.title}
+                                position="below"
+                              />
+
+                            </ImageListItem>
+                          </CardActionArea>
+                        ))}
+                      </ImageList>
+                    </Grid>
+
+                  </Grid>
+                </form>
+              </CardContent>
+            </Card>
+            <br />
+            <div>
+              <Button type="submit" style={{ color: 'white', backgroundColor: '#EE7600', width: '160px' }} variant="contained" onClick={handleHomePage}>Home</Button>
+            </div>
+          </Grid>
+        )}
     </div>
 
   );
