@@ -47,10 +47,10 @@
 - react-dom
 - react-scripts
 - web-vitals
+- cors
 
 ### Sever side dependencies
 
-- cors
 - dotenv
 - Flask
 - flask_sqlalchemy
